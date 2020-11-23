@@ -62,6 +62,7 @@ app.post('/api/users/authenticator', userController.authenticateUser);
 app.get('/api/tasks/public', taskController.getPublicTasks);
 app.post('/api/task/:taskId/images', uploadImg, imageController.addImage);
 app.delete('/api/task/:taskId/image/:imageId', imageController.deleteImg);
+app.get('/api/task/:taskId/image/:imageId', imageController.getImg)
 
 app.use(
     jwt({

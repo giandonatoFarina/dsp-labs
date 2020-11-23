@@ -2,6 +2,8 @@
 
 var utils = require('../utils/writer.js');
 var imageService = require('../service/ImageService.js');
+const { response } = require('express');
+var path = require('path');
 
 module.exports.addImage = function(req, res) {
     const taskId = req.params.taskId;
@@ -24,39 +26,6 @@ module.exports.addImage = function(req, res) {
     
 }
 
-// function checkFormat(fileName){
-//     if (fileName.includes(".jpeg") || fileName.includes(".jpg") || fileName.includes(".png") || fileName.includes(".gif"))
-//         return true;
-//     return false;
-// }
-
-// module.exports.deleteImg = function(req, res) {
-//     var imageId = req.params.imageId;
-
-//     imageService.getReference(imageId)
-//         .then((result) => {
-//             if(result){
-//                 fs.unlinkSync('./uploads/' + result);
-//                 console.log("File " + result + " deleted");
-
-//                 imageService.deleteImg(imageId)
-//                     .then((result) => {
-//                         utils.writeJson(result, { }, 204);
-//                     })
-//                     .catch(function (response) {
-//                         console.log('=== catch deleteImg ===')
-//                         utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
-//                     });
-//             } else 
-//                 utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': "Not Found" }],}, 404);
-//         })
-//         .catch(function (response) {
-//             console.log('=== catch deleteImg ===')
-//             utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
-//         });   
-
-// }
-
 module.exports.deleteImg = function(req,res,next){
     const imageId = req.params.imageId;
     const taskId = req.params.taskId;
@@ -70,4 +39,35 @@ module.exports.deleteImg = function(req,res,next){
             utils.writeJson(res, {}, 404);
         else utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': response }], }, 500);
     });
+}
+
+module.exports.getImg = function(req,res,next) {
+    const imageId = req.params.imageId;
+    const taskId = req.params.taskId;
+    const mediaType = req.header('accept'); 
+
+    if(mediaType === 'image/png' || mediaType === 'image/jpeg' || mediaType === 'image/gif'){
+        imageService.getImage(taskId, imageId)
+            .then( (response) => {
+                let type = mediaType.substr(6);
+                if (type === 'jpeg') type = 'jpg';
+                if(response.includes(type)) {
+                    res.sendFile(path.join(__dirname, '../uploads', response));
+                } else {
+                    // convertire
+                    
+                }
+            })
+            .catch( (response) => {
+                if (response==="Not Found")
+                    utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'Not Found' }] }, 404);
+                else 
+                    utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': response }], }, 500);
+            });
+    }
+    else 
+        utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': 'Unsupported Media Type' }] }, 415);
+
+    
+    
 }
