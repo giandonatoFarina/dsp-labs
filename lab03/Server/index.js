@@ -6,8 +6,10 @@ var cookieParser = require('cookie-parser');
 var jwt = require('express-jwt');
 var fs = require("fs");
 var { Validator, ValidationError } = require('express-json-validator-middleware');
+var ws = require('ws');
 
 var oas3Tools = require('oas3-tools');
+const { connectedUsers } = require('./controllers/Users');
 var serverPort = 3000;
 
 var taskController = require(path.join(__dirname, 'controllers/Tasks'));
@@ -73,6 +75,23 @@ app.use(function(err, req, res, next) {
     } else next(err);
 });
 
+// Websocket
+const wss = new ws.Server( {port: 5000} );
+module.exports.wss = wss;
+
+wss.on('connection', (ws) => {
+    let users = userController.getConnectedUsers();
+    console.log(users);
+    users.forEach( user => {
+        ws.send(
+            JSON.stringify({
+                'typeMessage': 'login',
+                'userId': user.id,
+                'userName': user.name,        
+            })     
+        );        
+    });
+});
 
 // Initialize the Swagger middleware
 http.createServer(app).listen(serverPort, function() {

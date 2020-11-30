@@ -54,7 +54,7 @@ module.exports.updateSelection = async function (req, res) {
   if(response.length == 0)
     utils.writeJson(res, { errors: [{'param': 'Server', 'msg': 'Task not assigned to user'}]}, 422);
   
-  let [err] = await to(Assignments.updateSelection(userId, taskId));
+  [err] = await to(Assignments.updateSelection(userId, taskId));
   if(err) 
     utils.writeJson(res, { errors: [{ 'param': 'Server', 'msg': err }], }, 500);
   else

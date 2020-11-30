@@ -121,11 +121,11 @@ exports.getAssignment = function (userId, taskId) {
 
 exports.updateSelection = function (userId, taskId) {
     return new Promise((resolve, reject) => {
-        const sql1 = "UPDATE assigments SET active=0 WHERE user=?";
+        const sql1 = "UPDATE assignments SET active=0 WHERE user=?";
         db.run(sql1, [userId], (err) => {
             if (err) reject(err);
             else {
-                const sql2 = "UPDATE assigments SET active=1 WHERE user=? AND task=?";
+                const sql2 = "UPDATE assignments SET active=1 WHERE user=? AND task=?";
                 db.run(sql2, [userId, taskId], (err) => {
                     if(err) reject(err);
                     else resolve();

@@ -7,6 +7,11 @@ var jsonwebtoken = require('jsonwebtoken');
 var jwtSecret = '6xvL4xkAAbG49hcXf5GIYSvkDICiUAR6EdR5dLdwW7hMzUjjMUe9t6M5kSAYxsvX';
 const expireTime = 604800; //seconds
 
+var server = require('../index')
+
+var connectedUsers = [];
+module.exports.getConnectedUsers = () => { return connectedUsers };
+
 module.exports.authenticateUser = function authenticateUser (req, res, next) {
   
   if(req.query.type == "login"){
@@ -20,9 +25,21 @@ module.exports.authenticateUser = function authenticateUser (req, res, next) {
                   if (!Users.checkPassword(user, password)) {
                     utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Wrong password' }],}, 401);
                   } else {
-                      const token = jsonwebtoken.sign({ user: user.id }, jwtSecret, { expiresIn: expireTime });
-                      res.cookie('token', token, { httpOnly: true, sameSite: true, maxAge: 1000 * expireTime });
-                      res.json({ id: user.id, name: user.name });
+                    // aggiungo utente al vettore
+                    // parametri da aggiunre: userId, userName, taskId, taskName
+                    connectedUsers.push({id: user.id, name: user.name});
+                    server.wss.clients.forEach( ws => {
+                      ws.send(
+                        JSON.stringify({
+                            'typeMessage': 'login',
+                            'userId': user.id,
+                            'userName': user.name,        
+                        })     
+                      ); 
+                    });
+                    const token = jsonwebtoken.sign({ user: user.id }, jwtSecret, { expiresIn: expireTime });
+                    res.cookie('token', token, { httpOnly: true, sameSite: true, maxAge: 1000 * expireTime });
+                    res.json({ id: user.id, name: user.name });
                   }
               }
           }).catch(
@@ -34,7 +51,19 @@ module.exports.authenticateUser = function authenticateUser (req, res, next) {
     }
     
     else if(req.query.type == "logout"){
-      res.clearCookie('token').end();
+      // tolgo utente dal vettore
+      Users.getUserByEmail(req.body.email)
+        .then( (user) => {
+          if (user === undefined) {
+            utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': 'Invalid e-mail' }],}, 404);
+          } else {
+            this.connectedUsers = this.connectedUsers.filter((u) =>  u.id != user.id);
+            res.clearCookie('token').end();
+          }
+        })
+        .catch(function (response) {
+          utils.writeJson(res, {errors: [{ 'param': 'Server', 'msg': response }],}, 500);
+        });
     }
 
     else{
